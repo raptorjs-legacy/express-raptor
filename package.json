@@ -1,0 +1,22 @@
+{
+  "name": "express-raptor",
+  "version": "0.1.0",
+  "description": "RaptorJS middleware for the Express framework",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/raptorjs/express-raptor"
+  },
+  "keywords": [
+    "express",
+    "raptor",
+    "templating"
+  ],
+  "author": "Patrick Steele-Idem <psteeleidem@ebay.com>",
+  "license": "Apache License v2.0",
+  "readmeFilename": "README.md",
+  "gitHead": "4ba5f83a38e915ee7270320a4dbcfdc4da0fdb08"
+}
