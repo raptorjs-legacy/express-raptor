@@ -1,6 +1,6 @@
-var renderContext = require('raptor/render-context'),
-    templating = require('raptor/templating');
-
+var renderContext = require('raptor/render-context');
+var templating = require('raptor/templating');
+var ExpressResetter = require('./ExpressResetter');
 
 function dataProviders(app, newProviders){
     var dataProviders = app.__raptorDataProviders;
@@ -21,20 +21,27 @@ function contextCreateDataProviders() {
     return require('raptor/data-providers').create(appDataProviders);
 }
 
-function contextRender(templateName, data) {
+function contextRenderTemplate(templateName, data) {
 
-    var promise = templating.renderAsync(templateName, data, this),
+    try
+    {
+        var promise = templating.renderAsync(templateName, data, this),
         res = this.getAttributes().response;
 
-    promise
-        .then(
-            function(output) {
-                res.end();
-            },
-            function(err) {
-                next(err);
-            });
-    return promise;
+        promise
+            .then(
+                function(output) {
+                    res.end();
+                },
+                function(err) {
+                    require('raptor/logging').logger('express-raptor').error('Call to context.renderTemplate failed: ' + err, err);
+                    next(err);
+                });
+        return promise; 
+    }
+    catch(e) {
+        require('raptor/logging').logger('express-raptor').error('Call to context.renderTemplate failed: ' + e, e);
+    }
 };
 
 function raptorHandler(userHandler) {
@@ -45,10 +52,27 @@ function raptorHandler(userHandler) {
         attributes.response = res;
         attributes.expressApp = req.app;
         context.createDataProviders = contextCreateDataProviders;
-        context.render = contextRender;
+        context.renderTemplate = contextRenderTemplate;
         userHandler(context, req, res, next);
     }
 };
 
+
+function createExpressResetter(app, express) {
+    return new ExpressResetter(app, express);
+}
+
+
+
 exports.handler = raptorHandler;
 exports.dataProviders = dataProviders;
+exports.createExpressResetter = createExpressResetter;
+
+exports.resetRoutes = function(app, express) {
+    if (app._expressResetter) {
+        app._expressResetter.reset();
+    }
+    else {
+        app._expressResetter = createExpressResetter(app, express);
+    }
+}
