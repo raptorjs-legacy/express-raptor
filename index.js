@@ -35,12 +35,13 @@ function contextRenderTemplate(templateName, data) {
                 },
                 function(err) {
                     require('raptor/logging').logger('express-raptor').error('Call to context.renderTemplate failed: ' + err, err);
-                    next(err);
+                    this.getAttributes().expressNext(err);
                 });
         return promise; 
     }
     catch(e) {
         require('raptor/logging').logger('express-raptor').error('Call to context.renderTemplate failed: ' + e, e);
+        this.getAttributes().expressNext(e);
     }
 };
 
@@ -51,6 +52,7 @@ function raptorHandler(userHandler) {
         attributes.request = req;
         attributes.response = res;
         attributes.expressApp = req.app;
+        attributes.expressNext = next;
         context.createDataProviders = contextCreateDataProviders;
         context.renderTemplate = contextRenderTemplate;
         userHandler(context, req, res, next);
@@ -62,12 +64,34 @@ function createExpressResetter(app, express) {
     return new ExpressResetter(app, express);
 }
 
+function addOptimizerRoutes(app, pageOptimizer, express) {
+    express = express || require('express');
 
+    if (!pageOptimizer) {
+        pageOptimizer = require('raptor/optimizer').getDefaultPageOptimizer();
+    }
+    var config = pageOptimizer.getConfig();
+    var sourceMappings = config.getServerSourceMappings();
+    if (sourceMappings && sourceMappings.length) {
+        sourceMappings.forEach(function(sourceMapping) {
+            var urlPrefix = sourceMapping.urlPrefix;
+            var baseDir = sourceMapping.baseDir;
+            app.use(urlPrefix, express.static(baseDir)); 
+        });
+    }
+
+    var outputDir = config.getOutputDir();
+    var urlPrefix = config.getUrlPrefix();
+    
+    if (outputDir && urlPrefix) {
+        app.use(urlPrefix, express.static(outputDir));
+    }
+}
 
 exports.handler = raptorHandler;
 exports.dataProviders = dataProviders;
 exports.createExpressResetter = createExpressResetter;
-
+exports.addOptimizerRoutes = addOptimizerRoutes;
 exports.resetRoutes = function(app, express) {
     if (app._expressResetter) {
         app._expressResetter.reset();
