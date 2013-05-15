@@ -1,6 +1,7 @@
 var renderContext = require('raptor/render-context');
 var templating = require('raptor/templating');
 var ExpressResetter = require('./ExpressResetter');
+var raptor = require('raptor');
 
 function dataProviders(app, newProviders){
     var dataProviders = app.__raptorDataProviders;
@@ -16,12 +17,24 @@ function dataProviders(app, newProviders){
     return dataProviders;
 };
 
-function contextCreateDataProviders() {
+function context_createDataProviders() {
     var appDataProviders = dataProviders(this.getAttributes().expressApp);
     return require('raptor/data-providers').create(appDataProviders);
 }
 
-function contextRenderTemplate(templateName, data) {
+function context_renderTemplate(templateName, data) {
+    // The first "renderTemplate" call is special because it is used
+    // to render the page and we automatically close the connection
+    // when the rendering is complete. We restore the original 
+    // "renderTemplate" method after the first call to this
+    // renderTemplate function
+    this.renderTemplate = this._oldRenderTemplate;
+    var _this = this;
+
+    function onError(e) {
+        var wrappedError = raptor.createError(new Error('Call to context.renderTemplate("' + templateName + '", ...) failed: ' + e), e);
+        _this.getAttributes().expressNext(wrappedError);
+    }
 
     try
     {
@@ -33,17 +46,21 @@ function contextRenderTemplate(templateName, data) {
                 function(output) {
                     res.end();
                 },
-                function(err) {
-                    require('raptor/logging').logger('express-raptor').error('Call to context.renderTemplate failed: ' + err, err);
-                    this.getAttributes().expressNext(err);
-                });
+                onError);
         return promise; 
     }
     catch(e) {
-        require('raptor/logging').logger('express-raptor').error('Call to context.renderTemplate failed: ' + e, e);
-        this.getAttributes().expressNext(e);
+        onError(e);
     }
 };
+
+function context_getRequest() {
+    return this.getAttributes().request;
+}
+
+function context_getResponse() {
+    return this.getAttributes().response;
+}
 
 function raptorHandler(userHandler) {
     return function(req, res, next) {
@@ -53,8 +70,11 @@ function raptorHandler(userHandler) {
         attributes.response = res;
         attributes.expressApp = req.app;
         attributes.expressNext = next;
-        context.createDataProviders = contextCreateDataProviders;
-        context.renderTemplate = contextRenderTemplate;
+        context.createDataProviders = context_createDataProviders;
+        context._oldRenderTemplate = context.renderTemplate;
+        context.renderTemplate = context_renderTemplate;
+        context.getRequest = context_getRequest;
+        context.getResponse = context_getResponse;
         userHandler(context, req, res, next);
     }
 };
