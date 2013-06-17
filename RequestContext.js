@@ -12,7 +12,7 @@ var RequestContext = define.Class(
         
         var oldRenderTemplate = Context.prototype.renderTemplate;
 
-        function RequestContext(request, response, next) {
+        function RequestContext(request, response) {
             // Use the response object as the output writer
             RequestContext.superclass.constructor.call(this, response);
 
@@ -20,7 +20,6 @@ var RequestContext = define.Class(
             attributes.request = request;
             attributes.response = response;
             attributes.app = request.app;
-            attributes.next = next;
         }
 
         // Copy properties to our new prototype to keep the prototype chain short:

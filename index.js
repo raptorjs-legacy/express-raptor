@@ -2,6 +2,7 @@ var ExpressResetter = require('./ExpressResetter');
 var raptor = require('raptor');
 var dataProviders = require('raptor/data-providers');
 var RequestContext = require('./RequestContext');
+var CONTEXT_KEY = 'raptorContext';
 
 function getAppDataProviders(app, newProviders){
 
@@ -24,11 +25,31 @@ function getAppDataProviders(app, newProviders){
 
 function raptorHandler(userHandler) {
     return function(req, res, next) {
-        var context = new RequestContext(req, res, next);
+        var context = req[CONTEXT_KEY];
+        if (!context) {
+            context = req[CONTEXT_KEY] = res[CONTEXT_KEY] = new RequestContext(req, res);
+        }
+
+        context.next = next;
+        
         userHandler(context, req, res, next);
     }
 };
 
+function context() {
+    return function(req, res, next) {
+
+        var context = req[CONTEXT_KEY];
+        if (!context) {
+            context = req[CONTEXT_KEY] = res[CONTEXT_KEY] = new RequestContext(req, res);
+        }
+        next();
+    }
+}
+
+function getContext(reqOrRes) {
+    return reqOrRes[CONTEXT_KEY];
+}
 
 function createExpressResetter(app, express) {
     return new ExpressResetter(app, express);
@@ -63,6 +84,8 @@ exports.dataProviders = getAppDataProviders;
 exports.createExpressResetter = createExpressResetter;
 exports.addOptimizerRoutes = addOptimizerRoutes;
 exports.RequestContext = RequestContext;
+exports.getContext = getContext;
+exports.context = context;
 
 exports.resetRoutes = function(app, express) {
     if (app._expressResetter) {
