@@ -47,8 +47,15 @@ function context() {
     }
 }
 
-function getContext(reqOrRes) {
-    return reqOrRes[CONTEXT_KEY];
+function getContext(req, res) {
+    var context = req[CONTEXT_KEY];
+    
+    if (!context && arguments.length === 2) {
+        // We currently don't have a context, but we can record it now
+        context = req[CONTEXT_KEY] = res[CONTEXT_KEY] = new RequestContext(req, res);
+    }
+
+    return context;
 }
 
 function createExpressResetter(app, express) {
