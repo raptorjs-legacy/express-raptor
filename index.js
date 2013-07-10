@@ -3,56 +3,48 @@ var raptor = require('raptor');
 var dataProviders = require('raptor/data-providers');
 var RequestContext = require('./RequestContext');
 var CONTEXT_KEY = 'raptorContext';
+var APP_DATA_PROVIDERS_KEY = '__raptorDataProviders';
+RequestContext.CONTEXT_KEY = CONTEXT_KEY;
+RequestContext.APP_DATA_PROVIDERS_KEY = APP_DATA_PROVIDERS_KEY;
 
 function getAppDataProviders(app, newProviders){
 
     // See if data providers are already associated with the app...
-    var appDataProviders = app.__raptorDataProviders;
-    
+    var appDataProviders = app[APP_DATA_PROVIDERS_KEY];
+
     if (!appDataProviders) {
         // It not, create the app data providers
-        appDataProviders = app.__raptorDataProviders = dataProviders.create();
+        appDataProviders = app[APP_DATA_PROVIDERS_KEY] = dataProviders.create();
     }
 
     // If new providers have been passed in, then reigster those providers
     if (arguments.length > 1) {
-        appDataProviders.register.apply(appDataProviders, raptor.arrayFromArguments(arguments, 1));    
+        appDataProviders.register.apply(appDataProviders, raptor.arrayFromArguments(arguments, 1));
     }
 
     return appDataProviders;
-};
+}
 
 
 function raptorHandler(userHandler) {
     return function(req, res, next) {
         var context = req[CONTEXT_KEY];
         if (!context) {
-            context = req[CONTEXT_KEY] = res[CONTEXT_KEY] = new RequestContext(req, res);
+            context = new RequestContext(req, res);
         }
 
         context.next = next;
-        
+
         userHandler(context, req, res, next);
-    }
-};
-
-function context() {
-    return function(req, res, next) {
-
-        var context = req[CONTEXT_KEY];
-        if (!context) {
-            context = req[CONTEXT_KEY] = res[CONTEXT_KEY] = new RequestContext(req, res);
-        }
-        next();
-    }
+    };
 }
 
 function getContext(req, res) {
     var context = req[CONTEXT_KEY];
-    
+
     if (!context && arguments.length === 2) {
         // We currently don't have a context, but we can record it now
-        context = req[CONTEXT_KEY] = res[CONTEXT_KEY] = new RequestContext(req, res);
+        context = new RequestContext(req, res);
     }
 
     return context;
@@ -74,13 +66,13 @@ function addOptimizerRoutes(app, pageOptimizer, express) {
         sourceMappings.forEach(function(sourceMapping) {
             var urlPrefix = sourceMapping.urlPrefix;
             var baseDir = sourceMapping.baseDir;
-            app.use(urlPrefix, express.static(baseDir)); 
+            app.use(urlPrefix, express.static(baseDir));
         });
     }
 
     var outputDir = config.getOutputDir();
     var urlPrefix = config.getUrlPrefix();
-    
+
     if (outputDir && urlPrefix) {
         app.use(urlPrefix, express.static(outputDir));
     }
@@ -92,7 +84,19 @@ exports.createExpressResetter = createExpressResetter;
 exports.addOptimizerRoutes = addOptimizerRoutes;
 exports.RequestContext = RequestContext;
 exports.getContext = getContext;
-exports.context = context;
+
+
+exports.middleware = {
+    context: function() {
+        return function(req, res, next) {
+            var context = req[CONTEXT_KEY];
+            if (!context) {
+                context = new RequestContext(req, res);
+            }
+            next();
+        };
+    }
+}
 
 exports.resetRoutes = function(app, express) {
     if (app._expressResetter) {
