@@ -84,7 +84,7 @@ exports.createExpressResetter = createExpressResetter;
 exports.addOptimizerRoutes = addOptimizerRoutes;
 exports.RequestContext = RequestContext;
 exports.getContext = getContext;
-
+exports.patchExpress = require('./patch-express');
 
 exports.middleware = {
     context: function() {

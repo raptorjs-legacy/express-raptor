@@ -4,11 +4,6 @@ var raptor = require('raptor');
 var dataProviders = require('raptor/data-providers');
 var Context = require('raptor/render-context/Context');
 
-
-function app_getAttributes() {
-    return this.attributes;
-}
-
 var RequestContext = define.Class(
     {
         superclass: Context
@@ -19,26 +14,23 @@ var RequestContext = define.Class(
 
         function RequestContext(request, response) {
             // Use the response object as the output writer
-            RequestContext.superclass.constructor.call(this, response);
+            Context.call(this, response);
             var CONTEXT_KEY = RequestContext.CONTEXT_KEY;
 
-
-            var attributes = this.getAttributes();
+            var attributes = this.attributes;
             attributes.request = request;
             attributes.response = response;
             attributes.app = request.app;
             request.attributes = response.attributes = attributes;
             request[CONTEXT_KEY] = response[CONTEXT_KEY] = this;
-
-            if (!request.getAttributes) {
-                // Patch the request and response prototype with getAttributes
-                request.app.request.getAttributes = app_getAttributes;
-                request.app.response.getAttributes = app_getAttributes;
-            }
         }
+
+        
 
         // Copy properties to our new prototype to keep the prototype chain short:
         raptor.extend(RequestContext.prototype, Context.prototype);
+
+        
 
         RequestContext.prototype.createDataProviders = function() {
 
@@ -54,6 +46,13 @@ var RequestContext = define.Class(
             // the application data providers
             return dataProviders.create(appDataProviders);
         };
+
+
+        RequestContext.prototype.createNestedContext = function(writer) {
+            var context = new NestedRequestContext(writer);
+            context.attributes = this.attributes;
+            return context;
+        }
 
         RequestContext.prototype.requestData = function(name, args) {
 
@@ -129,23 +128,29 @@ var RequestContext = define.Class(
     });
 
 Object.defineProperty(RequestContext.prototype, "request", {
-    get: function() { return this.getAttributes().request; },
-    set: function(request) { this.getAttributes().request = request; }
+    get: function() { return this.attributes.request; },
+    set: function(request) { this.attributes.request = request; }
 });
 
 Object.defineProperty(RequestContext.prototype, "response", {
-    get: function() {return this.getAttributes().response; },
-    set: function(response) { this.getAttributes().response = response; }
+    get: function() {return this.attributes.response; },
+    set: function(response) { this.attributes.response = response; }
 });
 
 Object.defineProperty(RequestContext.prototype, "app", {
-    get: function() { return this.getAttributes().app; },
-    set: function(app) { this.getAttributes().app = app; }
+    get: function() { return this.attributes.app; },
+    set: function(app) { this.attributes.app = app; }
 });
 
 Object.defineProperty(RequestContext.prototype, "next", {
-    get: function() {return this.getAttributes().next; },
-    set: function(next) { this.getAttributes().next = next; }
+    get: function() {return this.attributes.next; },
+    set: function(next) { this.attributes.next = next; }
 });
+
+function NestedRequestContext(writer) {
+    RequestContext.superclass.constructor.call(this, writer);
+}
+
+NestedRequestContext.prototype = RequestContext.prototype;
 
 module.exports = RequestContext;
