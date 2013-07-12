@@ -86,6 +86,44 @@ exports.RequestContext = RequestContext;
 exports.getContext = getContext;
 exports.patchExpress = require('./patch-express');
 
+var DELAY_PROMISES_KEY = '_raptorDelayPromises';
+
+function response_end() {
+    var _this = this;
+    var args = arguments;
+    var oldEnd = this._raptorOldEnd;
+
+    // Emit the "beforeEnd" event now to give other modules
+    // a chance to delay the actual end
+    this.emit('beforeEnd');
+
+    var delayPromises = this[DELAY_PROMISES_KEY]
+
+    function doEnd() {
+        oldEnd.apply(_this, args);
+        _this.emit('afterEnd');
+    }
+
+    if (delayPromises) {
+        promises.all(delayPromises)
+            .then(
+                function() {
+                    doEnd();
+                },
+                function(e) {
+                    var logger = require('raptor/logging').logger('express-raptor/patch-express');
+                    logger.error('One or more promises added to delay response.end() was rejected. Error: ' + e, e);
+                    doEnd();
+                })
+    }
+    else {
+        oldEnd.apply(this, args);
+        this.emit('afterEnd');
+    }
+}
+
+
+
 exports.middleware = {
     context: function() {
         return function(req, res, next) {
@@ -93,6 +131,10 @@ exports.middleware = {
             if (!context) {
                 context = new RequestContext(req, res);
             }
+
+            res._raptorOldEnd = res.end;
+            res.end = response_end;
+
             next();
         };
     }
