@@ -40,6 +40,10 @@ function raptorHandler(userHandler) {
 }
 
 function getContext(req, res) {
+    if (req instanceof RequestContext) {
+        return req;
+    }
+
     var context = req[CONTEXT_KEY];
 
     if (!context && arguments.length === 2) {
