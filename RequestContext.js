@@ -124,6 +124,8 @@ var RequestContext = define.Class(
             }
         };
 
+        RequestContext.prototype.isRequestContext = true;
+
         return RequestContext;
     });
 

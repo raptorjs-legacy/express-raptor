@@ -40,7 +40,7 @@ function raptorHandler(userHandler) {
 }
 
 function getContext(req, res) {
-    if (req instanceof RequestContext) {
+    if (req.isRequestContext) {
         return req;
     }
 
