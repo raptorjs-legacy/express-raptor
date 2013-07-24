@@ -152,3 +152,9 @@ exports.resetRoutes = function(app, express) {
         app._expressResetter = createExpressResetter(app, express);
     }
 }
+
+
+Object.defineProperty(exports, "RequestContext", {
+    get: function() {return RequestContext; },
+    set: function(value) { RequestContext = value; }
+});

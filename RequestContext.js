@@ -3,6 +3,7 @@ var templating = require('raptor/templating');
 var raptor = require('raptor');
 var dataProviders = require('raptor/data-providers');
 var Context = require('raptor/render-context/Context');
+var logger = require('raptor/logging').logger('express-raptor/RequestContext');
 
 var RequestContext = define.Class(
     {
@@ -103,7 +104,9 @@ var RequestContext = define.Class(
 
             function onError(e) {
                 var wrappedError = raptor.createError(new Error('Call to context.renderTemplate("' + templateName + '", ...) failed: ' + e), e);
-                _this.next(wrappedError);
+                logger.error(wrappedError);
+                response.write('Server Error');
+                response.end();
             }
 
             try
@@ -129,29 +132,35 @@ var RequestContext = define.Class(
         return RequestContext;
     });
 
-Object.defineProperty(RequestContext.prototype, "request", {
-    get: function() { return this.attributes.request; },
-    set: function(request) { this.attributes.request = request; }
-});
+RequestContext.defineProps = function(RequestContext) {
+    Object.defineProperty(RequestContext.prototype, "request", {
+        get: function() { return this.attributes.request; },
+        set: function(request) { this.attributes.request = request; }
+    });
 
-Object.defineProperty(RequestContext.prototype, "response", {
-    get: function() {return this.attributes.response; },
-    set: function(response) { this.attributes.response = response; }
-});
+    Object.defineProperty(RequestContext.prototype, "response", {
+        get: function() {return this.attributes.response; },
+        set: function(response) { this.attributes.response = response; }
+    });
 
-Object.defineProperty(RequestContext.prototype, "app", {
-    get: function() { return this.attributes.app; },
-    set: function(app) { this.attributes.app = app; }
-});
+    Object.defineProperty(RequestContext.prototype, "app", {
+        get: function() { return this.attributes.app; },
+        set: function(app) { this.attributes.app = app; }
+    });
 
-Object.defineProperty(RequestContext.prototype, "next", {
-    get: function() {return this.attributes.next; },
-    set: function(next) { this.attributes.next = next; }
-});
+    Object.defineProperty(RequestContext.prototype, "next", {
+        get: function() {return this.attributes.next; },
+        set: function(next) { this.attributes.next = next; }
+    });
+
+    
+}
 
 function NestedRequestContext(writer) {
     RequestContext.superclass.constructor.call(this, writer);
 }
+
+RequestContext.defineProps(RequestContext);
 
 NestedRequestContext.prototype = RequestContext.prototype;
 
