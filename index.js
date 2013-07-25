@@ -44,14 +44,7 @@ function getContext(req, res) {
         return req;
     }
 
-    var context = req[CONTEXT_KEY];
-
-    if (!context && arguments.length === 2) {
-        // We currently don't have a context, but we can record it now
-        context = new RequestContext(req, res);
-    }
-
-    return context;
+    return req.requestContext || req.attributes.requestContext;
 }
 
 function createExpressResetter(app, express) {
@@ -127,6 +120,7 @@ function response_end() {
 }
 
 
+exports.CONTEXT_KEY = CONTEXT_KEY;
 
 exports.middleware = {
     context: function() {
@@ -152,7 +146,6 @@ exports.resetRoutes = function(app, express) {
         app._expressResetter = createExpressResetter(app, express);
     }
 }
-
 
 Object.defineProperty(exports, "RequestContext", {
     get: function() {return RequestContext; },
