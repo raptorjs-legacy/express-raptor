@@ -1,4 +1,3 @@
-var ExpressResetter = require('./ExpressResetter');
 var raptor = require('raptor');
 var dataProviders = require('raptor/data-providers');
 var RequestContext = require('./RequestContext');
@@ -138,14 +137,7 @@ exports.middleware = {
     }
 }
 
-exports.resetRoutes = function(app, express) {
-    if (app._expressResetter) {
-        app._expressResetter.reset();
-    }
-    else {
-        app._expressResetter = createExpressResetter(app, express);
-    }
-}
+exports.resetRoutes = require('express-resetter').resetRoutes;
 
 Object.defineProperty(exports, "RequestContext", {
     get: function() {return RequestContext; },
