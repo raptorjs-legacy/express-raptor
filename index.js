@@ -1,4 +1,5 @@
 var raptor = require('raptor');
+var promises = require('raptor/promises');
 var dataProviders = require('raptor/data-providers');
 var RequestContext = require('./RequestContext');
 var CONTEXT_KEY = 'raptorContext';
