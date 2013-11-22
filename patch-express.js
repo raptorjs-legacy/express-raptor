@@ -11,7 +11,7 @@ module.exports = function(express) {
 
     response.isRedirect = function() {
         return this.statusCode === 300 || this.statusCode === 301;
-    }
+    };
 
     response.delayEnd = function(promise) {
         var delayPromises = this[DELAY_PROMISES_KEY];
@@ -20,15 +20,23 @@ module.exports = function(express) {
             this[DELAY_PROMISES_KEY] = [promise];
         }
         else {
-            delayPromises.push(promise);    
+            delayPromises.push(promise);
         }
-    }
+    };
 
     function getAttributes() {
         return this.attributes;
     }
 
+    function dataProviders() {
+        var raptorContext = this.attributes.raptorContext;
+        this.attributes.raptorContext.dataProviders.apply(raptorContext, arguments);
+    }
+
+    request.dataProviders = dataProviders;
+    request.dataProvider = dataProviders;
+
     request.getAttributes = getAttributes;
     response.getAttributes = getAttributes;
-}
+};
 

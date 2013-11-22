@@ -94,7 +94,7 @@ function response_end() {
     // a chance to delay the actual end
     this.emit('beforeEnd');
 
-    var delayPromises = this[DELAY_PROMISES_KEY]
+    var delayPromises = this[DELAY_PROMISES_KEY];
 
     function doEnd() {
         oldEnd.apply(_this, args);
@@ -136,7 +136,7 @@ exports.middleware = {
             next();
         };
     }
-}
+};
 
 exports.resetRoutes = require('express-resetter').resetRoutes;
 
